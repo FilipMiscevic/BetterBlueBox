@@ -1,12 +1,11 @@
-var pressed = []
 var audioContext = new AudioContext();
 
 const schema = {1:[700,900],  2: [700, 1100], 3:[900,1100],4: [700, 1300], 5: [900, 1300], 6: [1100, 1300],
-7: [700, 1500], 8: [900, 1500], 9: [1100, 1500], '*': [1100, 1700] ,0: [1300, 1500], '-': [1500, 1700], '+':[2600]}
+7: [700, 1500], 8: [900, 1500], 9: [1100, 1500], '*': [1100, 1700] ,0: [1300, 1500], '-': [1500, 1700], '+':[2600]};
 
 const dtmf = {1:[697,1209],  2: [697, 1336], 3:[697,1477],4: [770, 1209], 5:
 [770, 1336], 6: [770, 1477], 7: [852, 1209], 8: [852, 1336], 9: [852, 1477],
-'*': [941, 1209] ,0: [941, 1336], '-': [941, 1477], '+':[350,440]}
+'*': [941, 1209] ,0: [941, 1336], '-': [941, 1477], '+':[350,440]};
 
 var currentKeys = new Set();
 
@@ -16,7 +15,7 @@ function Tone(context,frequency){
 	oscillator.type = 'sine';
 	oscillator.frequency.setValueAtTime(frequency,context.currentTime); // value in hertz
 
-	return oscillator
+	return oscillator;
 }
 
 
@@ -25,36 +24,52 @@ function ToneMixer(audioContext){
 	this.context = audioContext;
 	this.tones = {};
 	this.gains = {};
+	this.defaultGain = 0.07;
+	this.lastMasterGain = 0;
 	this.whichOn = new Set();
 } 
 
 ToneMixer.prototype.setup = function(frequencies){
 
+    // create a lowpass filter, just like in POTS
     this.filter = this.context.createBiquadFilter();
     this.filter.type = "lowpass";
     this.filter.frequency = 8000;
     this.filter.connect(this.context.destination);
 
+    // create a master volume control for use e.g. with a slider
+    this.masterGain = this.context.createGain();
+    this.masterGain.gain.value = 1;
+    this.masterGain.connect(this.filter);
+
+    // initialize frequency oscillators and their gain nodes
 	for (var i in frequencies){
 		var frequency = frequencies[i];
 		this.addTone(frequency);
 	}
 }
 
-ToneMixer.prototype.addTone = function(frequency,gain=0.07){
+ToneMixer.prototype.addTone = function(frequency){
 	var tone = new Tone(this.context,frequency);
 
 	if (!this.gains[frequency]){
 	gainNode = this.context.createGain();
-	gainNode.gain.value = gain;
-	gainNode.connect(this.filter)
+	gainNode.gain.value = this.defaultGain;
+	gainNode.connect(this.masterGain)
 
 	//add to dict of tones	
 	this.gains[frequency] = gainNode;
-}	
+}
 	tone.connect(this.gains[frequency]);
 	this.tones[frequency] = tone;
 }
+
+ToneMixer.prototype.setGain = function(frequency,gain=this.defaultGain){
+	if (this.gains[frequency]){
+		this.gains[frequency].gain.value = gain;
+	}
+}
+
 
 ToneMixer.prototype.start = function(frequency, time = 0){
 	if (!this.whichOn.has(frequency)){
@@ -75,18 +90,14 @@ ToneMixer.prototype.stop = function(frequency, time = 0){
 
 // handle case where out of focus
 ToneMixer.prototype.mute = function(){
-	this.filter.disconnect(this.context.destination);
-}
-
-ToneMixer.prototype.disconnectAll = function(){
-	for (var frequency of this.whichOn){
-		this.tones[frequency].disconnect();
-		this.whichOn.delete(frequency);
-	}
+	this.lastMasterGain = this.masterGain.gain.value;
+	this.masterGain.gain.value = 0;
 }
 
 ToneMixer.prototype.unmute = function(){
-	this.filter.connect(this.context.destination);
+	if (!this.masterGain.gain.value){
+	this.masterGain.gain.value = this.lastMasterGain;
+	}
 }
 
 
@@ -96,7 +107,7 @@ function ToneBox(toneMixer,schema){
 	this.schema = schema;
 	this.keysPressed = new Set();
 	this.toneMixer.setup(Object.values(this.schema).flat());
-	this.toneMixer.gains[2600].gain.value = 1;
+	this.toneMixer.setGain(2600,1); //make 2600Hz louder
 
 	/*
 	this.freqMap = {};
@@ -174,7 +185,7 @@ ToneBox.prototype.stopMF = function (key,time=0){
 }
 */
 
-function ToneDialer(toneBox,duration=75,gap=75){
+function ToneDialer(toneBox,duration=120,gap=75){
 	this.toneBox = toneBox;
 	this.duration = duration/1000;
 	this.gap = gap/1000;
@@ -184,7 +195,7 @@ function ToneDialer(toneBox,duration=75,gap=75){
 ToneDialer.prototype.dial = function(sequence){
 
 	//TODO: stop existing tones from playing
-	this.toneBox.toneMixer.disconnectAll();
+	//this.toneBox.toneMixer.disconnectAll();
 
 	var time = this.toneBox.toneMixer.context.currentTime;
 
@@ -210,6 +221,13 @@ function PulseDialer(toneMixer){
 	this.digitPulses = {0:10,1:1,2:2,3:3,4:4,5:5,6:6,7:7,8:8,9:9,10:10};
 }
 
+PulseDialer.prototype.setup = function(){
+	if (!this.toneMixer.frequencies[this.freq]){
+		this.toneMixer.setup([this.freq]);
+	}
+	this.toneMixer.setGain(this.freq,1);
+}
+
 PulseDialer.prototype.dial = function(sequence){
 
 	var time = this.toneMixer.context.currentTime
@@ -219,7 +237,6 @@ PulseDialer.prototype.dial = function(sequence){
 		time = this.pulseDigit(digit,time);
 		time += this.interPulsePause;
 	}
-
 }
 
 PulseDialer.prototype.pulseDigit = function(digit,time=this.toneMixer.context.currentTime){
@@ -241,33 +258,71 @@ PulseDialer.prototype.pulseDigit = function(digit,time=this.toneMixer.context.cu
 }
 
 // event handlers
-
-$(document).keydown(function(e){
+function playMF(e){
 	var char = e.key;
 
 	if (currentKeys.has(char)){
 		return;
 	} else { 
 		currentKeys.add(char);
-
 		toneBox.playMF(currentKeys);
 	}
 	console.log(currentKeys);
-});
+}
 
-
-$(document).keyup(function(e){
+function stopMF(e){
 	var char = e.key;
-
 	currentKeys.delete(char);
-
-	console.log(char);
 	toneBox.playMF(currentKeys);
-	//pulseDialer.pulseDigit(char);
+}
 
+function pulseDigit(e){
+	var char = e.key;
+	currentKeys.delete(char);
+	pulseDialer.pulseDigit(char);
+}
 
-});
 
 var toneMixer = new ToneMixer(audioContext);
 var toneBox = new ToneBox(toneMixer,schema);
+var toneDialer = new ToneDialer(toneBox);
 var pulseDialer = new PulseDialer(toneMixer);
+
+
+$(function(){
+	$('#dial').click(function(){
+		var number = $('#number').val();
+		if ($('#dialType').val() === 'Keypad'){
+			toneDialer.dial(number);
+		} else if ($('#dialType').val() === 'Rotary'){
+			pulseDialer.dial(number);
+		}
+	});
+});
+
+
+// respond to event changes when DOM is ready
+$(function (){
+	$('#dialType').change(function(){
+
+		if ($('#dialType').val() === 'Keypad'){
+
+			$(document).off('keydown');
+			$(document).off('keyup');
+
+			$(document).on('keydown',playMF);
+			$(document).on('keyup',stopMF);
+
+		} else if ($('#dialType').val() === 'Rotary'){
+
+			$(document).off('keydown');
+			$(document).off('keyup');
+
+			$(document).on('keyup',pulseDigit);
+
+		}
+	});
+
+	// on startup, bind the event handlers for whichever option is currently selected
+	$('#dialType').change();
+});
