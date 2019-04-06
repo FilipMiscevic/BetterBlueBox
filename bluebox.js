@@ -514,6 +514,10 @@ $(function(){
 		dialers[dialType].dial(number);
 	});
 
+	//prevent text from being selected on mobile phones
+	$('.key').disableSelection();
+
+
 });
 
 
