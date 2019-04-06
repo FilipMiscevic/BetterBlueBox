@@ -386,14 +386,14 @@ function update(char){
 		return;
 	} else { 
 		currentKeys.add(char);
-		toneBox.update(currentKeys);
+		toneBox.update(currentKeys,audioContext.currentTime);
 	}
 	console.log(currentKeys);
 }
 
 function stopMF(char){
 	currentKeys.delete(char);
-	toneBox.update(currentKeys);
+	toneBox.update(currentKeys,audioContext.currentTime);
 }
 
 function pulseDigit(digit){
@@ -421,8 +421,9 @@ function bindRotaryKeyEvents(){
 	});
 
 	$('.key').on('mousedown touchstart',function(e){
-		//e.preventDefault();
 		var char = $(this).html();
+		//e.preventDefault();
+		console.log('Are we firing twice?')
 		$(document).on('mouseup touchend',function(){
 			pulseDialer.pulseDigit(char,audioContext.currentTime);
 			$(document).off('mouseup touchend');
@@ -513,9 +514,6 @@ $(function(){
 		var number = $('#number').val();
 		dialers[dialType].dial(number);
 	});
-
-	//prevent text from being selected on mobile phones
-	$('.key').disableSelection();
 
 
 });
