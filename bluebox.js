@@ -409,9 +409,9 @@ function clearKeyEvents(){
 	$(document).off('keydown');
 	$(document).off('keyup');
 
-	$(document).off('mousedown');
-	$(document).off('mouseup');
-	$('.key').off('mousedown')
+	$(document).off('mousedown touchstart');
+	$(document).off('mouseup touchend');
+	$('.key').off('mousedown touchstart')
 }
 
 function bindRotaryKeyEvents(){
@@ -420,11 +420,12 @@ function bindRotaryKeyEvents(){
 		pulseDialer.pulseDigit(e.key,audioContext.currentTime);
 	});
 
-	$('.key').on('mousedown',function(){
+	$('.key').on('mousedown touchstart',function(e){
+		//e.preventDefault();
 		var char = $(this).html();
-		$(document).on('mouseup',function(){
+		$(document).on('mouseup touchend',function(){
 			pulseDialer.pulseDigit(char,audioContext.currentTime);
-			$(document).off('mouseup');
+			$(document).off('mouseup touchend');
 		});	
 
 	});
@@ -443,12 +444,13 @@ function bindToneKeyEvents(){
 	});
 
 
-	$('.key').on('mousedown',function(){
+	$('.key').on('mousedown touchstart',function(e){
+		//e.preventDefault();
 		var key = $(this).html();
 		update(key);
-		$(document).on('mouseup',function(){
+		$(document).on('mouseup touchend',function(){
 			stopMF(key);
-			$(document).off('mouseup');
+			$(document).off('mouseup touchend');
 		});	
 
 	});
@@ -489,7 +491,7 @@ $(function(){
 			clearKeyEvents();
 
 			var key = $(this).html()
-			
+
 			if (key==='Pulse'){
 				dialType = 'DTMF';
 				$(this).html(dialType);
