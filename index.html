@@ -4,17 +4,53 @@
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 
 	<script src='./bluebox.js'></script>
+	<link rel="stylesheet" href="layout.css">
+	<!--GUI forthcoming! Enter a number to dial or press the number keys!
 
-	GUI forthcoming! Enter a number to dial or press the number keys!
-
+	
 	<form>
 		<input type='text' id='number'></input>
 		<button type='button' id='dial'>Dial</button>
 	  <select id='dialType' class="target">
-	    <option value="Keypad" selected="selected">Keypad</option>
+	    <option value="MF" selected="selected">Keypad</option>
 	    <option value="Rotary">Rotary</option>
+	    <option value="DTMF">DTMF</option>
 	  </select>
+	  <div class='upper'>1</div><div class ='lower'>ABC</div>
 	</form>
+	-->
+
+	<div class='keypad-container'>
+		
+		<div class='keypad'>
+			<input type='text' id='number' class='fullwidth bubble'></input>
+			<div class='key'>1</div>
+			<div class='key'>2</div>
+			<div class='key'>3</div>			<!--<div class='key'>A</div>	-->	
+
+			<div class='key'>4</div>
+			<div class='key'>5</div>
+			<div class='key'>6</div> 			<!-- <div class='key'>B</div>		-->
+
+			<div class='key'>7</div>
+			<div class='key'>8</div>
+			<div class='key'>9</div> 			<!--<div class='key'>C</div>		-->
+
+			<div class='key'>*</div>
+			<div class='key'>0</div>
+			<div class='key'>-</div>			<!--<div class='key'>D</div>	-->	
+			<div class='key fullwidth' value='+'>+</div>
+
+		</div>
+		<div class='side'>
+			<div id='dial' class='key'>Dial</div>
+			<div class='key'>A</div>
+			<div class='key'>B</div>
+			<div class='key'>C</div>
+			<div class='key'>D</div>			
+			<div id='dialType' class='key'>MF</div>
+	</div>
+	</div>		
 
 </head>
 </body>

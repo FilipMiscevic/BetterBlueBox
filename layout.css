@@ -1,0 +1,74 @@
+.keypad-container {
+  display: flex;
+  font-family: Helvetica;
+  font-weight: 400;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  margin: 0 auto;
+  width: 420px;
+
+} 
+
+.side{
+	width: 104px;
+}
+
+.keypad{
+	width: 315px;
+}
+
+.bubble {
+  border: 1px solid #006494;
+  border-radius: 50px;
+  color: #006494;
+  cursor: pointer;
+  display: inline-block;
+  font-size: 26px;
+  height: 80px;
+  line-height: 80px;
+  margin: 10px;
+  text-align: center;
+}
+
+.key {
+  border: 1px solid #006494;
+  border-radius: 50px;
+  color: #006494;
+  cursor: pointer;
+  display: inline-block;
+  font-size: 26px;
+  height: 80px;
+  line-height: 80px;
+  margin: 10px;
+  text-align: center;
+  width: 80px;
+  -webkit-transition: all 0.3s;
+  transition: all 0.3s;
+}
+
+.key:hover {
+	height: 75;
+	width: 75;
+	margin: 7.5;
+	transition:0s;
+}
+
+.key.active {
+  background-color: #002e44;
+  color: #FFFFFF;
+  transition: 0s
+}
+
+.key:active {
+  background-color: #006494;
+  color: #FFFFFF;
+  transition: 0s;
+}
+
+.fullwidth {
+	width: 292px;
+}
+
+.three-key-height {
+	height: 180px;
+}
