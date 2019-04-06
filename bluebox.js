@@ -407,7 +407,7 @@ function pulseDigit(digit){
 
 function clearKeyEvents(){
 	$(document).off('keydown keyup mousedown mouseup touchstart touchend');
-	$('.key').off('mousedown touchstart')
+	$('.key').off('mousedown touchstart mouseup')
 }
 
 function bindRotaryKeyEvents(){
@@ -416,14 +416,9 @@ function bindRotaryKeyEvents(){
 		pulseDialer.pulseDigit(e.key,audioContext.currentTime);
 	});
 
-	$('.key').on('mousedown',function(e){
+	$('.key').on('mouseup',function(e){
 		var char = $(this).html();
-		console.log('Are we firing twice?')
-		$(document).on('mouseup touchend',function(){
-			pulseDialer.pulseDigit(char,audioContext.currentTime);
-			$(document).off('mouseup touchend');
-		});	
-
+		pulseDialer.pulseDigit(char,audioContext.currentTime);
 	});
 }
 
@@ -445,15 +440,15 @@ function bindToneKeyEvents(){
 	});
 
 
-	$('.key').on('mousedown touchstart',function(e){
-		e.stopImmediatePropagation();
+	$('.key').on('touchstart mousedown',function(e){
+		//e.preventDefault();
 		var key = $(this).html();
 		update(key);
-		$(document).on('mouseup touchend',function(){
+		$(document).on('mouseup',function(){
 			stopMF(key);
 			$(document).off('mouseup touchend');
 		});	
-
+		//return false;
 	});
 
 }
