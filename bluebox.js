@@ -108,6 +108,8 @@ function Tone(audioContext,frequency){
 	var oscillator = audioContext.createOscillator();
 	oscillator.type = 'sine';
 	oscillator.frequency.setValueAtTime(frequency,audioContext.currentTime); // value in hertz
+	// set to mono for performance reasons
+	oscillator.channelCount = 1;
 
 	return oscillator;
 }
@@ -126,6 +128,7 @@ ToneMixer.prototype.setup = function(frequencies){
     // create a master volume control for use e.g. with a slider
     this.nodes.masterGain = {};
     masterGain = this.context.createGain();
+    masterGain.channelCount = 1;
     masterGain.gain.value = 10;
     masterGain.connect(this.context.destination);
     this.nodes.masterGain.node = masterGain;
@@ -133,6 +136,7 @@ ToneMixer.prototype.setup = function(frequencies){
     // create a lowpass filter, just like in POTS
     this.nodes.filter = {};
     filter = this.context.createBiquadFilter()
+    filter.channelCount = 1;
     filter.type = "lowpass";
     filter.frequency = 8000;
     filter.connect(this.nodes.masterGain.node);
@@ -157,6 +161,7 @@ ToneMixer.prototype.addTone = function(frequency){
 
 	if (!this.nodes[frequency].gainNode){
 	gainNode = this.context.createGain();
+	gainNode.channelCount = 1;
 	gainNode.gain.value = this.defaultGain;
 	gainNode.connect(this.nodes.filter.node);
 
@@ -362,6 +367,10 @@ PulseDialer.prototype.pulseDigit = function(digit,time=0){
 
 
 // event handlers
+function buttonStyleHandler(e, theme){
+
+}
+
 function update(char){
 	if (currentKeys.has(char)){
 		return;
