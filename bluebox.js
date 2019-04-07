@@ -50,6 +50,7 @@ const dtmf = {1:[697,1209],  2: [697, 1336], 3:[697,1477],4: [770, 1209], 5:
 var currentKeys = new Set();
 
 
+/*
 function Decoder(audioContext,reverseSchema){
 	this.context = audioContext;
 	this.schema = reverseSchema; //set of frequencies corresponding to signals
@@ -101,7 +102,7 @@ Decoder.prototype.decode = function(){
 
 var decoder = new Decoder(audioContext,schema);
 decoder.setup();
-
+*/
 
 function Tone(audioContext,frequency){
 	var oscillator = audioContext.createOscillator();
@@ -126,7 +127,7 @@ ToneMixer.prototype.setup = function(frequencies){
     this.nodes.masterGain = {};
     masterGain = this.context.createGain();
     masterGain.gain.value = 1;
-    masterGain.connect(decoder.analyser);
+    masterGain.connect(this.context.destination);
     this.nodes.masterGain.node = masterGain;
 
     // create a lowpass filter, just like in POTS
@@ -407,7 +408,7 @@ function pulseDigit(digit){
 
 function clearKeyEvents(){
 	$(document).off('keydown keyup mousedown mouseup touchstart touchend');
-	$('.key').off('mousedown touchstart mouseup')
+	$('.key').off('mousedown touchstart mouseup touchend')
 }
 
 function bindRotaryKeyEvents(){
@@ -416,7 +417,11 @@ function bindRotaryKeyEvents(){
 		pulseDialer.pulseDigit(e.key,audioContext.currentTime);
 	});
 
-	$('.key').on('mouseup',function(e){
+	$('.key').on('touchend mouseup',function(e){
+		if (e.type==='touchend'){
+			//e.preventDefault();	$(this).click();
+			$(this).off('mouseup');
+		}
 		var char = $(this).html();
 		pulseDialer.pulseDigit(char,audioContext.currentTime);
 	});
@@ -441,14 +446,19 @@ function bindToneKeyEvents(){
 
 
 	$('.key').on('touchstart mousedown',function(e){
-		//e.preventDefault();
+		oldThis = this;
+		$(this).addClass('touch-active');
+		if (e.type==='touchstart'){
+			$(this).off('mousedown');
+		}
 		var key = $(this).html();
 		update(key);
-		$(document).on('mouseup',function(){
+		$(document).on('touchend mouseup',function(e){
+			$(oldThis).removeClass('touch-active');
 			stopMF(key);
-			$(document).off('mouseup touchend');
+			$(document).off('touchend mouseup');
 		});	
-		//return false;
+
 	});
 
 }
@@ -510,6 +520,7 @@ $(function(){
 		dialers[dialType].dial(number);
 	});
 
+	$('#number').click(function(e){e.preventDefault();})
 
 });
 
