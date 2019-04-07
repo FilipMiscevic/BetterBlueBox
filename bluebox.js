@@ -432,10 +432,10 @@ function bindToneKeyEvents(){
 		}
 		var key = $(this).html();
 		update(key);
-		$(document).on('touchend mouseup',function(e){
+		$(document).on('touchend mouseup',test = function(e){
 			$(oldThis).removeClass('touch-active');
 			stopMF(key);
-			$(document).off('touchend mouseup');
+			$(document).off('touchend mouseup',test);
 		});	
 
 	});
