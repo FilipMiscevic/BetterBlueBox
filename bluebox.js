@@ -126,7 +126,7 @@ ToneMixer.prototype.setup = function(frequencies){
     // create a master volume control for use e.g. with a slider
     this.nodes.masterGain = {};
     masterGain = this.context.createGain();
-    masterGain.gain.value = 1;
+    masterGain.gain.value = 10;
     masterGain.connect(this.context.destination);
     this.nodes.masterGain.node = masterGain;
 
@@ -360,29 +360,9 @@ PulseDialer.prototype.pulseDigit = function(digit,time=0){
 	return time;
 }
 
-/*
-function ToneBox(dialers,defaultDialType){
-	this.dialers = dialers;
-	this.dialer = this.dialers[defaultDialType];
-	this.dialType = defaultDialType;
-};
-
-ToneBox.prototype.setDialer = function(dialType){
-	if (this.dialers[dialType]){
-		this.dialer = this.dialers[dialType];
-		this.dialType = dialType;
-	}
-};
-
-ToneBox.prototype.getDialer = function(dialType=this.dialType){
-	return this.dialers[dialType];
-};
-*/
-
 
 // event handlers
 function update(char){
-
 	if (currentKeys.has(char)){
 		return;
 	} else { 
@@ -397,15 +377,6 @@ function stopMF(char){
 	toneBox.update(currentKeys,audioContext.currentTime);
 }
 
-function pulseDigit(digit){
-
-	if (!pulseDialer.dialing){	
-		pulseDialer.dialing = true;
-		pulseDialer.pulseDigit(digit);
-	}
-	pulseDialer.dialing = false;
-};
-
 function clearKeyEvents(){
 	$(document).off('keydown keyup mousedown mouseup touchstart touchend');
 	$('.key').off('mousedown touchstart mouseup touchend')
@@ -419,7 +390,6 @@ function bindRotaryKeyEvents(){
 
 	$('.key').on('touchend mouseup',function(e){
 		if (e.type==='touchend'){
-			//e.preventDefault();	$(this).click();
 			$(this).off('mouseup');
 		}
 		var char = $(this).html();
@@ -472,14 +442,20 @@ var pulseDialer = new PulseDialer(toneMixer);
 var toneBox = null;
 var dialers = {'Rotary':pulseDialer, 'DTMF':dtmfDialer,'MF':toneDialer};
 var dialType = null;
+var lastCalled = null;
 
 // mute keys when typing a number
 $(function(){
 	$('#number').focus(function(){
-		$(document).off('keydown');
-		$(document).off('keyup');
+		clearKeyEvents();
+		//$(this).removeAttr('readonly').select();
+		//$(this).value(function(){return this.value + $('.key').on('')});
 	});
-	$('#number').blur();
+
+	$('#number').blur(function(){
+		lastCalled();
+		//$(this).attr('readonly', 'readonly');
+	});
 });
 
 
@@ -490,8 +466,8 @@ $(function(){
 
 
 	toneBox = dialers['MF']
-
-	bindToneKeyEvents();
+	lastCalled = bindToneKeyEvents;
+	lastCalled();
 
 	$('#dialType').click(function(){
 			clearKeyEvents();
@@ -502,25 +478,25 @@ $(function(){
 				dialType = 'DTMF';
 				$(this).html(dialType);
 				toneBox = dialers[dialType];
-				bindToneKeyEvents();
+				lastCalled = bindToneKeyEvents;
 			} else if (key==='DTMF'){
 				dialType = 'MF';
 				$(this).html(dialType);
 				toneBox = dialers[dialType];
-				bindToneKeyEvents();
+				lastCalled = bindToneKeyEvents;
 			} else if (key==='MF'){
 				dialType = 'Rotary';
 				$(this).html('Pulse');
-				bindRotaryKeyEvents();
+				lastCalled = bindRotaryKeyEvents;
 			}
+
+			lastCalled();
 	});
 
 	$('#dial').click(function(){
 		var number = $('#number').val();
 		dialers[dialType].dial(number);
 	});
-
-	$('#number').click(function(e){e.preventDefault();})
 
 });
 
