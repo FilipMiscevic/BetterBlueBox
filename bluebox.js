@@ -495,6 +495,7 @@ var lastCalled = null;
 
 // dial a number when the dial button is clicked
 $(function(){
+	alert('Welcome to BetterBlueBox! Touch or type numbers to hear them play. Send feedback to https://github.com/FilipMiscevic/BetterBlueBox/issues')
 	//style keys
 	bindStyleKeyEvents();
 
@@ -547,9 +548,6 @@ $(function(){
 		//$(this).attr('readonly', 'readonly');
 	});
 
-});
-
-$(
 	$(document).on('keyup', function(e){
 		var char = e.key;
 		if (char == ' '){
@@ -557,5 +555,6 @@ $(
 		} else if (char == 'Enter'){
 			$('#dial').click();
 		}
-	})
-	)
+	});
+
+});
