@@ -324,7 +324,7 @@ function PulseDialer(toneMixer){
 	this.pulseProportion = 0.75;
 	this.interPulsePause = 1;
 
-	this.digitPulses = {0:10,1:1,2:2,3:3,4:4,5:5,6:6,7:7,8:8,9:9,10:10};
+	this.schema = {0:10,1:1,2:2,3:3,4:4,5:5,6:6,7:7,8:8,9:9,10:10,'+':-0.5};
 
 	this.dialing = false;
 }
@@ -352,31 +352,36 @@ PulseDialer.prototype.pulseDigit = function(digit,time=0){
 	var pulseDuration = this.pulseProportion / this.pulsePerSecond;
 	var pauseDuration = (1.0-this.pulseProportion) / this.pulsePerSecond;
 
-	var digitPulses = this.digitPulses[digit] || 0;
+	var digitPulses = this.schema[digit] || 0;
 
-	for (var i = 0; i < digitPulses; i++){
+	if (digitPulses >= 0){	
+		for (var i = 0; i < digitPulses; i++){
 
+			this.toneMixer.start(this.freq,time);
+			time += pulseDuration;
+			this.toneMixer.stop(this.freq,time);
+			time += pauseDuration;
+
+		}
+	} else {
 		this.toneMixer.start(this.freq,time);
-		time += pulseDuration;
+		time -= digitPulses;
 		this.toneMixer.stop(this.freq,time);
-		time += pauseDuration;
-
-	}	
+	}
 	return time;
 }
 
 
 // event handlers
+// style-related event handlers
 function styleKeyDown(e){
-	var char = e.key || e;
-	char = char.toUpperCase();
-	$('.key').filter(function(){return $(this).html()===char}).addClass('active');
+	var char = {'Enter':'Dial'}[e.key] || e.key.toUpperCase() || e.toUpperCase();
+	$('.key').filter(function(){return ($(this).html() || $(this).val())===char}).addClass('active');
 }
 
 function styleKeyUp(e){
-	var char = e.key || e;
-	char = char.toUpperCase();
-	$('.key').filter(function(){return $(this).html()===char}).removeClass('active');
+	var char = {'Enter':'Dial'}[e.key] || e.key.toUpperCase() || e.toUpperCase();
+	$('.key').filter(function(){return ($(this).html() || $(this).val())===char}).removeClass('active');
 }
 
 function styleTouchStart(e){
@@ -393,6 +398,18 @@ function styleTouchStart(e){
 	})
 }
 
+//disable keys that are not in the toneDialer's schema, except for a few keys 
+function disableKeys(dialType){
+	$('.key').addClass('disabled');
+	$('#dial').removeClass('disabled');
+	$('#dialType').removeClass('disabled');
+
+	for (key in dialers[dialType].schema){
+		$('.key').filter(function(){return $(this).html()===key}).removeClass('disabled');
+	}
+}
+
+// audio-related event handlers
 function playTone(e){
 	var char = e.key || e;
 	char = char.toUpperCase();
@@ -476,21 +493,6 @@ var dialers = {'Rotary':pulseDialer, 'DTMF':dtmfDialer,'MF':toneDialer};
 var dialType = null;
 var lastCalled = null;
 
-// mute keys when typing a number
-$(function(){
-	$('#number').focus(function(){
-		clearAudioEvents();
-		//$(this).removeAttr('readonly').select();
-		//$(this).value(function(){return this.value + $('.key').on('')});
-	});
-
-	$('#number').blur(function(){
-		lastCalled();
-		//$(this).attr('readonly', 'readonly');
-	});
-});
-
-
 // dial a number when the dial button is clicked
 $(function(){
 	//style keys
@@ -500,6 +502,7 @@ $(function(){
 	toneBox = dialers['MF']
 	lastCalled = bindToneKeyEvents;
 	lastCalled();
+	disableKeys(dialType);
 
 	$('#dialType').click(function(){
 			clearAudioEvents();
@@ -521,6 +524,8 @@ $(function(){
 				$(this).html('Pulse');
 				lastCalled = bindRotaryKeyEvents;
 			}
+
+			disableKeys(dialType);
 			lastCalled();
 	});
 
@@ -530,6 +535,27 @@ $(function(){
 		dialers[dialType].dial(number);
 	});
 
+
+	$('#number').focus(function(){
+		clearAudioEvents();
+		//$(this).removeAttr('readonly').select();
+		//$(this).value(function(){return this.value + $('.key').on('')});
+	});
+
+	$('#number').blur(function(){
+		lastCalled();
+		//$(this).attr('readonly', 'readonly');
+	});
+
 });
 
-
+$(
+	$(document).on('keyup', function(e){
+		var char = e.key;
+		if (char == ' '){
+			$('#dialType').click();
+		} else if (char == 'Enter'){
+			$('#dial').click();
+		}
+	})
+	)

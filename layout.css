@@ -80,6 +80,15 @@
   transition: 0s;
 }
 
+.key.disabled {
+  pointer-events: none;
+  border: 1px solid #FFFFFF;
+  background-color: #b5b5b5;
+  color: #FFFFFF;
+  transition: 0s;
+
+}
+
 .fullwidth {
 	width: 292px;
 }
