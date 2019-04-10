@@ -7,4 +7,4 @@ While this doesn't work on modern telephone equipment, enthusiasts have made it 
 
 Send me a message if there are features you'd like to see added. I certainly have an idea for a few of them myself, which I might get to some point:
 - add support for a Redbox
-- decode MF and SF tones
+- decode MF and SF tones in realtime (partially supported)
