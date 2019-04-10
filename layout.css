@@ -86,11 +86,22 @@
   background-color: #b5b5b5;
   color: #FFFFFF;
   transition: 0s;
-
 }
 
-.fullwidth {
+.key.record {
+  border: 1px solid #FFFFFF;
+  background-color: red;
+  font-size: 22px;
+  color: #FFFFFF;
+  transition: 0s;
+}
+
+.full-width {
 	width: 292px;
+}
+
+.two-third-width {
+	width: 186px;
 }
 
 .three-key-height {

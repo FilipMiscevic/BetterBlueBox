@@ -1,47 +1,9 @@
 var audioContext = new AudioContext();
 
+const customKeyMap = {'Enter':'Dial'};
+
 const schema = {1:[700,900],  2: [700, 1100], 3:[900,1100],4: [700, 1300], 5: [900, 1300], 6: [1100, 1300],
 7: [700, 1500], 8: [900, 1500], 9: [1100, 1500], '*': [1100, 1700] ,0: [1300, 1500], '-': [1500, 1700], '+':[2600]};
-
-const schema2 = {1: {'frequencies': [700,900],
-},
-				2: {'frequencies': [700, 1100],
-				'extra-text':'ABC',
-			},
-				3: {'frequencies': [900,1100],
-				'extra-text':'DEF',
-			},
-				4: {'frequencies': [700, 1300],
-				'extra-text':'GHI',
-			},
-				5: {'frequencies': [900, 1300],
-				'extra-text':'JKL',
-			},
-				6: {'frequencies': [1100, 1300],
-				'extra-text':'MNO',
-			},
-				7: {'frequencies': [700, 1500],
-				'extra-text':'PRS',
-			},
-				8: {'frequencies': [900, 1500],
-				'extra-text':'TUV',
-			},
-				9: {'frequencies': [1100, 1500],
-				'extra-text':'WXY',
-			},
-				'*': {'frequencies':[1100, 1700],
-				'extra-text':'KP',
-			},
-				0: {'frequencies':[1300, 1500],
-				'extra-text':'OPERATOR',
-			},
-				'-': {'frequencies':[1500, 1700],
-				'extra-text':'ST',
-			},
-				'+': {'frequencies':[2600],
-				'extra-text':''}
-			};
-
 
 const dtmf = {1:[697,1209],  2: [697, 1336], 3:[697,1477],4: [770, 1209], 5:
 [770, 1336], 6: [770, 1477], 7: [852, 1209], 8: [852, 1336], 9: [852, 1477],
@@ -50,59 +12,107 @@ const dtmf = {1:[697,1209],  2: [697, 1336], 3:[697,1477],4: [770, 1209], 5:
 var currentKeys = new Set();
 
 
-/*
-function Decoder(audioContext,reverseSchema){
+function Decoder(audioContext){
 	this.context = audioContext;
-	this.schema = reverseSchema; //set of frequencies corresponding to signals
-	
-	this.lastDecoded = null;
-}
-
-Decoder.prototype.setup = function(){
+	this.tolerance = 10.0;
 	this.analyser = this.context.createAnalyser();
 
 	this.sampleRate = this.context.sampleRate;
 	this.analyser.fftSize = 4096;
 	this.bufferLength = this.analyser.frequencyBinCount;
 	this.dataArray = new Uint8Array(this.bufferLength);
-	this.analyser.minDecibels = -90;
+	this.previousArray = new Uint8Array(this.bufferLength);
+	this.averagedArray = new Uint8Array(this.bufferLength);
+	this.analyser.minDecibels = -50;
 	this.analyser.maxDecibels = -10;
-	this.analyser.smoothingTimeConstant = 0.4;
+	this.analyser.smoothingTimeConstant = 0.01;
 	this.analyser.connect(this.context.destination)
+}
 
+Decoder.prototype.setup = function(schema){
+	this.schema = schema;
+	this.reverseSchema = {};//set of frequencies corresponding to signals
+
+	for (key in this.schema){
+		for (f in this.schema[key]){
+			var frequency = this.schema[key][f];
+			if(!this.reverseSchema[frequency]){
+				this.reverseSchema[frequency] = new Set();
+			} 
+			this.reverseSchema[frequency].add(key);
+		}
+	}
 }
 
 Decoder.prototype.getMax = function(array){
 	return array.reduce((iMax, x, i, arr) => x > array[iMax] ? i : iMax, 0);
 }
 
-
-Decoder.prototype.getPeaks = function(){}
-
 Decoder.prototype.decode = function(){
+	var peaks = this.getPeaks();
+
+	var freqs = new Set();
+	var candidateDigits = new Set();
+
+	// compare which frequencies are present
+	/*- cycle through frequencies in reverseSchema
+	  - if a frequency is in the range of a peak, add its digits to a list of candidate digits
+	  - 
+	*/
+
+	for (i in peaks){
+		var peak = peaks[i];
+
+		for (var freq in this.reverseSchema){
+			if( (freq-this.tolerance) <= peak && (freq-+-this.tolerance) > peak){
+				freqs.add(freq);
+
+				for (candidate of this.reverseSchema[freq]){
+					if (!candidateDigits[candidate]){
+						candidateDigits[candidate] = 0;
+					} candidateDigits[candidate] += 1;
+				}
+			}
+		}
+	}
+
+	var final = new Array();
+	//console.log(candidateDigits);
+
+	for (digit in candidateDigits){
+		if (candidateDigits[digit] === this.schema[digit].length){
+			final.push(digit);
+		}
+	}
+	return final;
+}
+
+Decoder.prototype.getPeaks = function(){
+	var peaks = new Array();
 
 	this.analyser.getByteFrequencyData(this.dataArray);
 
 	var binFreq = this.sampleRate / this.analyser.fftSize;
 
 	var indexOfMax = this.getMax(this.dataArray);
-	var halfmax = this.dataArray[indexOfMax]? this.dataArray[indexOfMax] / 2 : 0;
+	var halfmax = (7.0*this.dataArray[indexOfMax]? this.dataArray[indexOfMax] / 8 : 0);
 
 	var j = 0;
 	for (var i=0; i<this.dataArray.length-1; i++){
 		if (this.dataArray[i] > halfmax){
 			j = (this.dataArray[j] < this.dataArray[i]) ? i : j;
 			if (this.dataArray[i+1] < halfmax){
-				console.log(j*binFreq);
+				peaks.push(j*binFreq);
 				j = 0;
 			}
 		}
 	}
+	return peaks;
 }
 
-var decoder = new Decoder(audioContext,schema);
-decoder.setup();
-*/
+var decoder = new Decoder(audioContext);
+decoder.setup(schema);
+
 
 function Tone(audioContext,frequency){
 	var oscillator = audioContext.createOscillator();
@@ -130,7 +140,7 @@ ToneMixer.prototype.setup = function(frequencies){
     masterGain = this.context.createGain();
     masterGain.channelCount = 1;
     masterGain.gain.value = 10;
-    masterGain.connect(this.context.destination);
+    masterGain.connect(decoder.analyser); //this.context.destination);
     this.nodes.masterGain.node = masterGain;
 
     // create a lowpass filter, just like in POTS
@@ -141,8 +151,6 @@ ToneMixer.prototype.setup = function(frequencies){
     filter.frequency = 8000;
     filter.connect(this.nodes.masterGain.node);
     this.nodes.filter.node = filter;
-
-
 
     // initialize frequency oscillators and their gain nodes
 	for (var i in frequencies){
@@ -215,24 +223,27 @@ function ToneDialer(toneMixer, schema, duration = 120, gap = 75){
 	this.toneMixer = toneMixer;
 	this.schema = schema;
 	this.keysPressed = new Set();
-	this.toneMixer.setup(Object.values(this.schema).flat());
-	this.toneMixer.setGain(2600,1); //make 2600Hz louder
 
 	this.duration = duration/1000;
 	this.gap = gap/1000;
 
 	this.dialing = false;
-	/*
+}
+
+ToneDialer.prototype.setup = function(){
+	this.toneMixer.setup(Object.values(this.schema).flat());
+	this.toneMixer.setGain(2600,1); //make 2600Hz louder
 	this.freqMap = {};
+
 	for (key in schema){
 		for (f in schema[key]){
 			var frequency = schema[key][f];
-			if(this.freqMap[frequency]){
-				this.freqMap[frequency].add(key);
-			} else this.freqMap[frequency] = new Set();
+			if(!this.freqMap[frequency]){
+				this.freqMap[frequency] = new Set();
+			} 
+			this.freqMap[frequency].add(key);
 		}
 	}
-	*/
 }
 
 
@@ -272,7 +283,7 @@ ToneDialer.prototype.update = function (keys = new Set(),time=0){
 			this.toneMixer.start(frequency,time);
 		}
 	}
-	console.log(this.toneMixer.whichOn);
+	//console.log(this.toneMixer.whichOn);
 }
 
 /*
@@ -299,9 +310,6 @@ ToneDialer.prototype.stopMF = function (key,time=0){
 */
 
 ToneDialer.prototype.dial = function(sequence){
-
-	//TODO: stop existing tones from playing
-	//this.ToneDialer.toneMixer.disconnectAll();
 
 	var time = this.toneMixer.context.currentTime;
 
@@ -330,9 +338,7 @@ function PulseDialer(toneMixer){
 }
 
 PulseDialer.prototype.setup = function(){
-	if (!this.toneMixer.frequencies[this.freq]){
-		this.toneMixer.setup([this.freq]);
-	}
+	this.toneMixer.setup([this.freq]);
 	this.toneMixer.setGain(this.freq,1);
 }
 
@@ -375,12 +381,12 @@ PulseDialer.prototype.pulseDigit = function(digit,time=0){
 // event handlers
 // style-related event handlers
 function styleKeyDown(e){
-	var char = {'Enter':'Dial'}[e.key] || e.key.toUpperCase() || e.toUpperCase();
+	var char = customKeyMap[e.key] || e.key.toUpperCase() || e.toUpperCase();
 	$('.key').filter(function(){return ($(this).html() || $(this).val())===char}).addClass('active');
 }
 
 function styleKeyUp(e){
-	var char = {'Enter':'Dial'}[e.key] || e.key.toUpperCase() || e.toUpperCase();
+	var char = customKeyMap[e.key] || e.key.toUpperCase() || e.toUpperCase();
 	$('.key').filter(function(){return ($(this).html() || $(this).val())===char}).removeClass('active');
 }
 
@@ -403,6 +409,7 @@ function disableKeys(dialType){
 	$('.key').addClass('disabled');
 	$('#dial').removeClass('disabled');
 	$('#dialType').removeClass('disabled');
+	$('#mode').removeClass('disabled');
 
 	for (key in dialers[dialType].schema){
 		$('.key').filter(function(){return $(this).html()===key}).removeClass('disabled');
@@ -420,7 +427,7 @@ function playTone(e){
 		currentKeys.add(char);
 		toneBox.update(currentKeys,audioContext.currentTime);
 	}
-	console.log(currentKeys);
+	//console.log(currentKeys);
 }
 
 function touchTone(e){
@@ -462,6 +469,8 @@ function clearAudioEvents(){
 	$(document).off('keydown', playTone);
 	$(document).off('keyup', pulseDigit)
 	$(document).off('keyup', stopTone)
+
+	$('#dial').off('click',dial);
 }
 
 function bindStyleKeyEvents(){
@@ -474,6 +483,8 @@ function bindStyleKeyEvents(){
 function bindRotaryKeyEvents(){
 	$(document).on('keyup',pulseDigit);
 	$('.key').on('mouseup',pulseDigit);
+
+	$('#dial').on('click',dial);
 }
 
 function bindToneKeyEvents(){
@@ -481,13 +492,24 @@ function bindToneKeyEvents(){
 	$(document).on('keyup',stopTone);
 
 	$('.key').on('touchstart mousedown', touchTone);
+
+	$('#dial').on('click',dial);
 }
 
+function dial(){
+		var number = $('#number').val();
+		number = number.toUpperCase();
+		dialers[dialType].dial(number);
+	}
 
 var toneMixer = new ToneMixer(audioContext);
 var toneDialer = new ToneDialer(toneMixer,schema);
+toneDialer.setup();
 var dtmfDialer = new ToneDialer(toneMixer,dtmf);
+dtmfDialer.setup();
 var pulseDialer = new PulseDialer(toneMixer);
+pulseDialer.setup();
+
 var toneBox = null;
 var dialers = {'Rotary':pulseDialer, 'DTMF':dtmfDialer,'MF':toneDialer};
 var dialType = null;
@@ -495,7 +517,7 @@ var lastCalled = null;
 
 // dial a number when the dial button is clicked
 $(function(){
-	alert('Welcome to BetterBlueBox! Touch or type numbers to hear them play. Send feedback to https://github.com/FilipMiscevic/BetterBlueBox/issues')
+	alert('Welcome to BetterBlueBox! Touch or type numbers to hear them play. You can also decode tones in realtime to the console by toggling the "Play/Decode" button (caveats - doesn\'t work in SF mode and currently only decodes from the keypad -- but it is reading the frequencies via FFT!). Send feedback to https://github.com/FilipMiscevic/BetterBlueBox/issues')
 	//style keys
 	bindStyleKeyEvents();
 
@@ -510,32 +532,36 @@ $(function(){
 
 			var key = $(this).html()
 
-			if (key==='Pulse'){
+			if (key==='SF'){
 				dialType = 'DTMF';
 				$(this).html(dialType);
 				toneBox = dialers[dialType];
 				lastCalled = bindToneKeyEvents;
+
+				$('#mode').removeClass('disabled')
+				decoder.setup(dtmf);
 			} else if (key==='DTMF'){
 				dialType = 'MF';
 				$(this).html(dialType);
 				toneBox = dialers[dialType];
 				lastCalled = bindToneKeyEvents;
+
+				$('#mode').removeClass('disabled')
+				decoder.setup(schema);
 			} else if (key==='MF'){
 				dialType = 'Rotary';
-				$(this).html('Pulse');
+				$(this).html('SF');
 				lastCalled = bindRotaryKeyEvents;
+
+				//if ($('#mode').html() === 'Decode'){ $('#mode').click();}
 			}
+
 
 			disableKeys(dialType);
 			lastCalled();
 	});
 
-	$('#dial').click(function(){
-		var number = $('#number').val();
-		number = number.toUpperCase();
-		dialers[dialType].dial(number);
-	});
-
+	$('#dial').click(dial);
 
 	$('#number').focus(function(){
 		clearAudioEvents();
@@ -556,5 +582,42 @@ $(function(){
 			$('#dial').click();
 		}
 	});
+
+	var i = null;
+	var decoded = null;
+
+	$('#mode').click(function(){
+		var mode = $(this).html();
+
+		if (mode === 'Play'){
+			var key = $('#dialType').html()
+
+			if (key==='MF'){
+				$(this).removeClass('disabled')
+				$(this).addClass('record');
+				decoder.setup(schema);
+			} else if (key==='DTMF'){
+				$(this).removeClass('disabled')
+				$(this).addClass('record');
+				decoder.setup(dtmf);
+			} else if (key==='SF'){
+				$(this).addClass('disabled')
+				$(this).removeClass('record');
+			}
+
+			$(this).html('Decode')
+			i = setInterval(function(){
+				var oldDecoded = decoded;
+				decoded = decoder.decode()[0];
+				if ( (oldDecoded !== decoded) && (decoded !== undefined)){
+				console.log(decoded)
+				}
+			},5);
+		} else if (mode === 'Decode'){
+			clearInterval(i);
+			$(this).html('Play')
+			$(this).removeClass('record');
+		}
+	})
 
 });
