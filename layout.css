@@ -27,10 +27,11 @@
   flex-wrap: wrap;
   justify-content: flex-start;
   margin: 0 auto;
-  width: 420px;
+  width: 422px;
 
 } 
 
+/*
 .side{
 	width: 104px;
 }
@@ -38,24 +39,18 @@
 .keypad{
 	width: 315px;
 }
+*/
 
-.bubble {
-  border: 1px solid #006494;
-  border-radius: 50px;
-  color: #006494;
-  cursor: pointer;
-  display: inline-block;
-  font-size: 26px;
-  height: 80px;
-  line-height: 80px;
-  margin: 10px;
-  text-align: center;
+.bubble.bubble {
+	background-color: #FFFFFF;
+	color: gray;
 }
 
+.bubble, 
 .key {
   border: 1px solid #006494;
-  border-radius: 50px;
   color: #006494;
+  border-radius: 50px;
   cursor: pointer;
   display: inline-block;
   font-size: 26px;
@@ -67,6 +62,7 @@
   -webkit-transition: all 0.3s;
   transition: all 0.3s;
 }
+
 
 .key.active {
   background-color: #002e44;
@@ -80,13 +76,73 @@
   transition: 0s;
 }
 
-.key.disabled {
-  pointer-events: none;
-  border: 1px solid #FFFFFF;
-  background-color: #b5b5b5;
-  color: #FFFFFF;
-  transition: 0s;
+
+.full-width {
+	width: 292px;
 }
+
+.two-thirds-width {
+	width: 186px;
+}
+
+.three-key-height {
+	height: 180px;
+}
+
+/* schemas for different box schemes */
+/* whitebox (DTMF) */
+.white-box {
+  border: 1px solid #006494;
+  color: #006494;
+  transition: 0s
+}
+
+.white-box.active {
+  background-color: #002e44;
+  color: #FFFFFF;
+}
+
+.white-box.touch-active {
+  background-color: #006494;
+  color: #FFFFFF;
+}
+
+/* bluebox (SS5/SF) */
+.blue-box {
+  border: 1px solid #4848ff;;
+  background-color: #313ba5db;
+  color: #FFFFFF;
+  transition: 0s
+}
+
+.blue-box.active {
+  background-color: darkblue;
+  color: #FFFFFF;
+}
+
+.blue-box.touch-active {
+  background-color: #7917c1;
+  color: #FFFFFF;
+}
+
+/* redbox (ACTS) */
+.red-box{
+	border: 1px solid #ab2f2f;
+	background-color: #f14343;
+	color: #ffffff;
+	transition: 0s;
+}
+
+.red-box.active{
+	background-color: #ab2f2f;
+}
+
+.red-box.touch-active{
+	background-color: #a90000;
+}
+
+
+/*  */
 
 .key.record {
   border: 1px solid #FFFFFF;
@@ -94,16 +150,19 @@
   font-size: 22px;
   color: #FFFFFF;
   transition: 0s;
+  animation: blinker 1s linear infinite;
 }
 
-.full-width {
-	width: 292px;
+@keyframes blinker {
+  50% {
+    opacity: 0;
+  }
 }
 
-.two-third-width {
-	width: 186px;
-}
-
-.three-key-height {
-	height: 180px;
-}
+.key.disabled {
+  pointer-events: none;
+  border: 1px solid #FFFFFF;
+  background-color: #b5b5b5;
+  color: #FFFFFF;
+  transition: 0s;
+} 
