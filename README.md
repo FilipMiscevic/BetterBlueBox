@@ -20,4 +20,4 @@ Known issues:
 - there is a delay when using the mobile version of the site from when a key is pressed until audio starts to play. This appears to be a hardware issue and I am trying to figure out a workaround.
 - the decoder isn't perfect, and doesn't work in SF mode. You may have to adjust for volume/noise to get it to properly recognize digits, though I got pretty good results even with my laptop speaker
 
-In memory of Stefan Andreas Scheytt (a.k.a. Onkel Dittmeyer).
+In memory of Stefan Andreas Scheytt (a.k.a. Onkel Dittmeyer), phreak and creator of an excellent piece of software called BlueBEEP.
