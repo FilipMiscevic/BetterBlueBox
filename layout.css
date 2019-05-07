@@ -121,7 +121,7 @@
 }
 
 .blue-box.touch-active {
-  background-color: #7917c1;
+  background-color: #581788;
   color: #FFFFFF;
 }
 
@@ -134,11 +134,11 @@
 }
 
 .red-box.active{
-	background-color: #ab2f2f;
+	background-color: #a90000;
 }
 
 .red-box.touch-active{
-	background-color: #a90000;
+	background-color: #ab2f2f;
 }
 
 

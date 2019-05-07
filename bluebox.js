@@ -23,19 +23,40 @@ const dtmf = {1:[697,1209],  2: [697, 1336], 3:[697,1477],4: [770, 1209], 5:
  const rotary = {'+':{'frequencies':[2600],'mark':75,'space':25},
  1:{'sequence':'+','space':1000},
  2:{'sequence':'++','extra-text':'ABC','space':1000},
- 3:{'sequence':'+++','extra-text':'ABC','space':1000},
- 4:{'sequence':'++++','extra-text':'ABC','space':1000},
- 5:{'sequence':'+++++','extra-text':'ABC','space':1000},
- 6:{'sequence':'++++++','extra-text':'ABC','space':1000},
- 7:{'sequence':'+++++++','extra-text':'ABC','space':1000},
- 8:{'sequence':'++++++++','extra-text':'ABC','space':1000},
- 9:{'sequence':'+++++++++','extra-text':'ABC','space':1000},
- 0:{'sequence':'++++++++++','extra-text':'ABC','space':1000},
- 11:{'sequence':'+++++++++++','extra-text':'ABC','space':1000},
+ 3:{'sequence':'+++','extra-text':'DEF','space':1000},
+ 4:{'sequence':'++++','extra-text':'HIJ','space':1000},
+ 5:{'sequence':'+++++','extra-text':'KLM','space':1000},
+ 6:{'sequence':'++++++','extra-text':'NOP','space':1000},
+ 7:{'sequence':'+++++++','extra-text':'QRS','space':1000},
+ 8:{'sequence':'++++++++','extra-text':'TUV','space':1000},
+ 9:{'sequence':'+++++++++','extra-text':'WXY','space':1000},
+ 0:{'sequence':'++++++++++','extra-text':'OPERATOR','space':1000},
+ 11:{'sequence':'+++++++++++','space':1000},
+}
+
+const ss4 = {'.':{'frequencies':[2400.5],'mark':35,'space':35},',':{'frequencies':[2040],'mark':350,'space':35},
+'\'':{'frequencies':[2040],'mark':35,'space':35},';':{'frequencies':[2040],'mark':100,'space':35},
+'CF':{'frequencies':[2400.5,2040],'mark':100,'space':0},"\"":{'frequencies':[2400.5],'mark':100,'space':35},
+1:{'sequence':"...'",'space':0},
+2:{'sequence':"..'.",'space':0},
+3:{'sequence':"..''",'space':0},
+4:{'sequence':".'..",'space':0},
+5:{'sequence':".'.'",'space':0},
+6:{'sequence':".''.",'space':0},
+7:{'sequence':".'''",'space':0},
+8:{'sequence':"'...",'space':0},
+9:{'sequence':"'..'",'space':0},
+0:{'sequence':"'.'.",'space':0},
+'A':{'sequence':"'.''",'space':350},
+'B':{'sequence':['CF',"\""],'space':350},
+'C':{'sequence':"''..",'space':350},
+'D':{'sequence':['CF',','],'space':100},	
+'-':{'sequence':"''''",'space':350},
+'*':{'sequence':['CF',';'],'space':100},
 }
 
 
-const schema2 = {1: {'frequencies': [700,900],
+const ss5 = {1: {'frequencies': [700,900],
 },
 				2: {'frequencies': [700, 1100],
 				'extra-text':'ABC',
@@ -70,7 +91,7 @@ const schema2 = {1: {'frequencies': [700,900],
 				'-': {'frequencies':[1500, 1700],
 				'extra-text':'ST', 
 			},
-				'/': {'frequencies':[1300, 1700],
+				'B0': {'frequencies':[1300, 1700],
 				'extra-text':'KP2', 'mark': 110,
 			},
 				'+': {'frequencies':[2600],
@@ -397,13 +418,13 @@ ToneDialer.prototype.dial = function(sequence, time){
 	for(i in sequence){
 		digit = sequence[i];
 		if (this.schema[digit]){
-			var space = (this.schema[digit]['space'] || this.space)/1000;
+			var space = ((this.schema[digit]['space'] !== undefined)? this.schema[digit]['space']: this.space)/1000;
 			if (this.schema[digit]['sequence']){
 				time = this.dial(this.schema[digit]['sequence'],time);
 				console.log('R',digit,space);
 			} else {
 				this.update(new Set([digit]),time);
-				time += (this.schema[digit]['mark']  || this.mark )/1000;
+			    time += ((this.schema[digit]['mark'] !== undefined)? this.schema[digit]['mark']: this.mark)/1000;
 				this.update(new Set(),time);			
 				console.log(digit,this.schema[digit]['space']);
 			}				
@@ -555,18 +576,21 @@ function dial(){
 	}
 
 var toneMixer = new ToneMixer(audioContext);
-var toneDialer = new ToneDialer(toneMixer,schema2);
+
+var toneDialer = new ToneDialer(toneMixer,ss5);
 toneDialer.setup();
 var dtmfDialer = new ToneDialer(toneMixer,dtmf);
 dtmfDialer.setup();
 var sfDialer = new ToneDialer(toneMixer,rotary);
 sfDialer.setup();
+var ss4Dialer = new ToneDialer(toneMixer,ss4);
+ss4Dialer.setup();
 
 var redBox = new ToneDialer(toneMixer,redbox);
 redBox.setup();
 
 var toneBox = null;
-var dialers = {'Rotary':sfDialer, 'DTMF':dtmfDialer,'MF':toneDialer,'Red':redBox};
+var dialers = {'Rotary':sfDialer, 'DTMF':dtmfDialer,'SS5':toneDialer,'Red':redBox,'SS4':ss4Dialer};
 var dialType = null;
 var lastCalled = null;
 
@@ -598,26 +622,31 @@ $(function(){
 
 			var key = $(this).html()
 
-			if (key==='Red'){
+			if (key==='SS4'){
 				dialType = 'DTMF';
 				$(this).html(dialType);
-				$('.key, .bubble').removeClass('red-box');
+				$('.key, .bubble').removeClass('blue-box');
 				$('.key, .bubble').addClass('white-box');
 
 				decoder.setup(dtmf);
 			} else if (key==='DTMF'){
-				dialType = 'MF';
+				dialType = 'SS5';
 				$(this).html(dialType);
 				$('.key, .bubble').removeClass('white-box');
 				$('.key, .bubble').addClass('blue-box');
 				decoder.setup(schema);
-			} else if (key==='MF'){
+			} else if (key==='SS5'){
 				dialType = 'Rotary';
 				$(this).html('SF');
 			} else if (key==='SF'){
 				dialType = 'Red';
 				$('.key, .bubble').removeClass('blue-box');
 				$('.key, .bubble').addClass('red-box');
+				$(this).html(dialType);
+			} else if (key==='Red'){
+				dialType = 'SS4';
+				$('.key, .bubble').removeClass('red-box');
+				$('.key, .bubble').addClass('blue-box');
 				$(this).html(dialType);
 			}
 
