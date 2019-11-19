@@ -2,6 +2,8 @@ var audioContext = new AudioContext();
 
 const customKeyMap = {'Enter':'Dial'};
 
+const custom = {};
+
 const schema = {1:[700,900],  2: [700, 1100], 3:[900,1100],4: [700, 1300], 5: [900, 1300], 6: [1100, 1300],
 7: [700, 1500], 8: [900, 1500], 9: [1100, 1500], '*': [1100, 1700] ,0: [1300, 1500], '-': [1500, 1700], '+':[2600]};
 
@@ -245,13 +247,16 @@ ToneMixer.prototype.setup = function(frequencies){
     this.nodes.masterGain.node = masterGain;
 
     // create a lowpass filter, just like in POTS
-    this.nodes.filter = {};
+    /* lowpass filter seems to interfere with
+    in-band dialing in Europe, not sure why */
+    //this.nodes.filter = {};
+    /*
     filter = this.context.createBiquadFilter()
     filter.channelCount = 1;
     filter.type = "lowpass";
     filter.frequency = 8000;
-    filter.connect(this.nodes.masterGain.node);
-    this.nodes.filter.node = filter;
+    filter.connect(this.nodes.masterGain.node);*/
+    //this.nodes.filter.node = filer//masterGain;
 
     // initialize frequency oscillators and their gain nodes
 	for (var i in frequencies){
@@ -272,7 +277,7 @@ ToneMixer.prototype.addTone = function(frequency){
 	gainNode = this.context.createGain();
 	gainNode.channelCount = 1;
 	gainNode.gain.value = this.defaultGain;
-	gainNode.connect(this.nodes.filter.node);
+	gainNode.connect(this.nodes.masterGain.node);
 
 	this.nodes[frequency].gainNode = gainNode;
 }
